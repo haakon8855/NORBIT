@@ -5,8 +5,8 @@ name = "pypi"
 
 [packages]
 pymongo = {extras = ["srv"], version = "*"}
-autohooks = "*"
-autohooks-plugin-black = "*"
+
+[dev-packages]
 
 [requires]
 python_version = "3.9"

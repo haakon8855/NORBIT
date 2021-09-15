@@ -7,6 +7,30 @@ import datetime
 from env import *
 from requests.models import Response
 
+GATEWAY_FIELDS = {
+    "_id": "id",
+    "awsThingName": "awsThingName",
+    "friendlyName": "friendlyName",
+    "imei": "imei",
+    "lastActive": "lastActive",
+    "positionLng": "positionLng",
+    "positionLat": "positionLat"
+}
+
+SMART_TAG_FIELDS = {"_id": "id", "customerId": {"status": "customerId"}}
+
+TD_FIELDS = {
+    "_id": "id",
+    "timeStamp": "timestamp",
+    "temperature": "temperature",
+    "positionLng": "positionLng",
+    "positionLat": "positionLat",
+    "rssi": "rssi",
+    "Sid": "tagId",
+    "Gid": "gatewayId",
+    "humidity": "humidity"
+}
+
 
 class NorbitApi():
     def __init__(self):
@@ -116,6 +140,32 @@ class NorbitApi():
         return requests.get(request_url, headers=self.headers)
 
 
+def filter_data(response, fields):
+    """
+    Filters the json data from the given response by only keeping the fields
+    given in 'source_fields', then renaming the fields with their corresponding
+    field name in 'target_fields'. 
+    """
+    try:
+        elements = response.json()  # assumes a list of objects
+        filtered_elements = []
+        for i in range(len(elements)):
+            element = elements[i]
+            filtered_element = {}
+            for target_field in fields:
+                source_field = fields[target_field]
+                if isinstance(source_field, str):
+                    filtered_element[target_field] = element[source_field]
+                else:
+                    key = list(source_field.keys())[0]
+                    filtered_element[target_field] = element[key][
+                        source_field[key]]
+            filtered_elements.append(filtered_element)
+        return filtered_elements
+    except:
+        return None
+
+
 def get_time_stamp_format(year: int,
                           month: int,
                           day: int,
@@ -141,41 +191,22 @@ def print_response(response: requests.models.Response):
     Prints the api response in a user-friendly way.
     """
     print("Status code:", response.status_code)
-    json_response = response.json()
-    print(json_to_text(json_response))
+    try:
+        print(json_to_text(response.json()))
+    except:
+        print(response.text())
 
 
 if __name__ == "__main__":
     api = NorbitApi()
 
-    # response = api.get_companies()
-    # response = api.get_company(company_id=1)
+    response = api.get_gateways(company_id=1)
+    filtered = filter_data(response, GATEWAY_FIELDS)
+    print(json_to_text(filtered))
 
-    # response = api.get_gateways(company_id=1)
-
-    # response = api.get_devices("locator")
-    # # Denne virker ikke, antar get_gateways brukes i stedet.
-
-    # response = api.get_devices("smart_tag")
-
-    # response = api.get_device(company_id=1,
-    #                                  device_id=5,
-    #                                  device_type="smart_tag")
-
-    # response = api.get_td_by_limit(company_id=1,
-    #                                   device_id=1,
-    #                                   gateway_id=1,
-    #                                   limit=2)
-
-    # response = api.get_td_by_device(company_id=1,
-    #                                    device_id=5,
-    #                                    last_hours=1000)
-
-    # response = api.get_td_by_gateway(company_id=1,
-    #                                  gateway_id=1,
-    #                                  last_hours=3000)
-
-    # print_response(response)
+    response = api.get_devices("smart_tag")
+    filtered = filter_data(response, SMART_TAG_FIELDS)
+    print(json_to_text(filtered))
 
     start = get_time_stamp_format(2021, 5, 27)
     stop = get_time_stamp_format(2021, 5, 28)
@@ -183,5 +214,5 @@ if __name__ == "__main__":
                                            device_id=1,
                                            dateTimeFrom=start,
                                            dateTimeTo=stop)
-
-    print_response(response)
+    filtered = filter_data(response, TD_FIELDS)
+    print(json_to_text(filtered))

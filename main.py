@@ -1,9 +1,6 @@
-import os
-
-from flask import Flask, jsonify, current_app, g
+from flask import Flask, Response, jsonify, request
 import pymongo
-from flask_pymongo import PyMongo
-from flask_restful import Resource, abort, reqparse
+from flask_restful import abort
 from pymongo.errors import DuplicateKeyError
 from env import *
 
@@ -11,29 +8,12 @@ from env import *
 app = Flask(__name__)
 client = pymongo.MongoClient(DB_URI, port=DB_PORT, tls=True, tlsAllowInvalidHostnames=True,
                              tlsCAFile=DB_CA_FILE, username=DB_USERNAME, password=DB_PASSWORD)
-pymongo = PyMongo(app)
-
-beaconValues_put_args = reqparse.RequestParser()
-beaconIds = {}
-
+BeaconValues = {}
 db = client.testdb
 
-td = db.td
-
-
-class locationSchema(ma.Schema):
-    class Meta:
-        fields = ("strenger")
-
-
 def abort_beaconId_not_found(beaconId):
-    if beaconId not in beaconIds:
+    if beaconId not in BeaconValues:
         abort(404, message="Beacon Id is not found")
-
-
-def abort_beaconId_exists(beaconId):
-    if beaconId in beaconIds:
-        abort(409, message="Beacon with id already exists")
 
 
 @app.errorhandler(404)
@@ -52,38 +32,35 @@ def resource_not_found(e):
     return jsonify(error=f"Duplicate key error."), 400
 
 
-@app.route('/BeaconValues/<string:beaconId>', methods=["GET"])
-def get(beaconId):
+@app.route('/td/<int:beaconId>', methods=["POST"])
+def post_td(beaconId: int) -> Response:
+    new_value = request.get_json()
+    BeaconValues[beaconId] = new_value
+    db.td.insert_one(new_value)
+    return jsonify(message="success"), 201
+
+
+@app.route('/td/<int:beaconId>', methods=["DELETE"])
+def delete_td(beaconId):
     abort_beaconId_not_found(beaconId)
-    # find kan ta inn parameter til å finne spesifike ting
-    # kan bruke blant annet $eq, $ne, $gt, $lt, $lte og $nin
-    beaconIds = db.gateway.find()
-    return beaconIds[beaconId]
+    del BeaconValues[beaconId]
 
-
-@app.route('/BeaconValues/<string:beaconId>', methods=["PUT"])
-def put(beaconId):
-    abort_beaconId_exists(beaconId)
-
-    # se på hvilken som er den beste / mest riktig måte å gjøre det på
-    args = beaconValues_put_args.parse_args()
-    beaconIds[beaconId] = args
-
-    # dette skal være en dict av ting man skal putte inn i collection i mongoDB
-    db.gateway.insert_one(beaconId)
-
-    # kan også returnere flask.jsonify(message="success")
-    return beaconIds[beaconId], 201
-
-
-@app.route('/BeaconValues/<string:beaconId>', methods=["DELETE"])
-def delete(beaconId):
-    abort_beaconId_not_found(beaconId)
-    del beaconIds[beaconId]
-
-    db.gateway.delete_one(beaconId)
+    db.td.delete_many({"_id": beaconId})
     return "", 204
 
+@app.route('/td/<int:deviceId>/', methods=['GET'])
+def get_td(deviceId: int) -> Response:
+    try:
+        td = db.td.find({"_id": int(deviceId)})[0]
+    except IndexError:
+        print("index error")
+        return "", 404
+    
+    BeaconValues[deviceId] = td
+    return jsonify([td])
 
 if __name__ == "__main__":
+    for x in db.td.find({}):
+        BeaconValues[x["_id"]] = x
     app.run(debug=True)
+    client.close()

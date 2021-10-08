@@ -9,6 +9,9 @@ __pycache__/
 # env
 env.py
 
+# RDS-certificate
+rds-combined-ca-bundle.pem
+
 # Distribution / packaging
 .Python
 build/

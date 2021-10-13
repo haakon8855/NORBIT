@@ -8,6 +8,7 @@ __pycache__/
 
 # env
 env.py
+BluetrackFingerprint.pem
 
 # RDS-certificate
 rds-combined-ca-bundle.pem

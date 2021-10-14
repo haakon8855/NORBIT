@@ -1,9 +1,11 @@
 from flask import Flask, Response, jsonify, request
+import json
 import pymongo
 import move_data
 from flask_restful import abort
 from pymongo.errors import DuplicateKeyError
 from env import *
+import algorithm_triangulation
 
 # Configure Flask & Flask-PyMongo:
 app = Flask(__name__)
@@ -11,6 +13,7 @@ CLIENT = None
 DB = None
 LAST_UPDATE = None
 BeaconValues = {}
+
 
 def abort_beaconId_not_found(beaconId):
     if beaconId not in BeaconValues:
@@ -26,11 +29,11 @@ def resource_not_found(e):
 
 
 @app.errorhandler(DuplicateKeyError)
-def resource_not_found(e):
+def dublicate_key_found(e):
     """
     An error-handler to ensure that MongoDB duplicate key errors are returned as JSON.
     """
-    return jsonify(error=f"Duplicate key error."), 400
+    return jsonify(error=f"Duplicate key error.{e}"), 400
 
 
 @app.route('/td/<int:beaconId>', methods=["POST"])
@@ -57,7 +60,7 @@ def get_td(deviceId: int):
     except IndexError:
         print("index error")
         return "", 404
-    
+
     BeaconValues[deviceId] = td
     return jsonify([td])
 
@@ -69,15 +72,22 @@ def update():
     LAST_UPDATE = updated_at if updated_at != 0 else LAST_UPDATE
     return "sucess", 200
 
+
 @app.route("/ping", methods=["GET"])
 def ping():
     return "sucess", 200
 
 
 if __name__ == "__main__":
-    CLIENT = pymongo.MongoClient(DB_URI, port=DB_PORT, tls=True, tlsAllowInvalidHostnames=True,
-                             tlsCAFile=DB_CA_FILE, username=DB_USERNAME, password=DB_PASSWORD)
+    CLIENT = pymongo.MongoClient(DB_URI,
+                                 port=DB_PORT,
+                                 tls=True,
+                                 tlsAllowInvalidHostnames=True,
+                                 tlsCAFile=DB_CA_FILE,
+                                 username=DB_USERNAME,
+                                 password=DB_PASSWORD)
     DB = CLIENT.testdb
     LAST_UPDATE = move_data.get_last_updated(CLIENT, "callibrationData")
+    algorithm_triangulation.algorithm(CLIENT)
     app.run(debug=True)
     CLIENT.close()

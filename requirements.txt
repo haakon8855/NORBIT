@@ -16,3 +16,5 @@ requests
 flask-pymongo
 bson
 flask-marshmallow
+haversine
+vincenty

@@ -11,8 +11,6 @@ six==1.15.0
 SQLAlchemy==1.3.18
 Werkzeug==1.0.1
 flask-mongoengine==0.9.5
-pymongo
+pymongo==3.12.0
 requests
 flask-pymongo
-bson
-flask-marshmallow

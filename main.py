@@ -1,15 +1,19 @@
-from flask import Flask, Response, jsonify, request
+from flask import Flask, jsonify, request
 import pymongo
 from flask_restful import abort
 from pymongo.errors import DuplicateKeyError
+
+import move_data
 from env import *
+from algorithm_trilateration import algorithm_trilateration
 
 # Configure Flask & Flask-PyMongo:
 app = Flask(__name__)
-client = pymongo.MongoClient(DB_URI, port=DB_PORT, tls=True, tlsAllowInvalidHostnames=True,
-                             tlsCAFile=DB_CA_FILE, username=DB_USERNAME, password=DB_PASSWORD)
+CLIENT = None
+DB = None
+LAST_UPDATE = None
 BeaconValues = {}
-db = client.testdb
+
 
 def abort_beaconId_not_found(beaconId):
     if beaconId not in BeaconValues:
@@ -25,18 +29,18 @@ def resource_not_found(e):
 
 
 @app.errorhandler(DuplicateKeyError)
-def resource_not_found(e):
+def dublicate_key_found(e):
     """
     An error-handler to ensure that MongoDB duplicate key errors are returned as JSON.
     """
-    return jsonify(error=f"Duplicate key error."), 400
+    return jsonify(error=f"Duplicate key error.{e}"), 400
 
 
 @app.route('/td/<int:beaconId>', methods=["POST"])
-def post_td(beaconId: int) -> Response:
+def post_td(beaconId: int):
     new_value = request.get_json()
     BeaconValues[beaconId] = new_value
-    db.td.insert_one(new_value)
+    DB.td.insert_one(new_value)
     return jsonify(message="success"), 201
 
 
@@ -45,22 +49,45 @@ def delete_td(beaconId):
     abort_beaconId_not_found(beaconId)
     del BeaconValues[beaconId]
 
-    db.td.delete_many({"_id": beaconId})
+    DB.td.delete_many({"_id": beaconId})
     return "", 204
 
+
 @app.route('/td/<int:deviceId>/', methods=['GET'])
-def get_td(deviceId: int) -> Response:
+def get_td(deviceId: int):
     try:
-        td = db.td.find({"_id": int(deviceId)})[0]
+        td = DB.td.find({"_id": int(deviceId)})[0]
     except IndexError:
         print("index error")
         return "", 404
-    
+
     BeaconValues[deviceId] = td
     return jsonify([td])
 
+
+@app.route('/update')
+def update():
+    global LAST_UPDATE
+    updated_at = move_data.update_callibration(CLIENT, 1, 41, LAST_UPDATE)
+    LAST_UPDATE = updated_at if updated_at != 0 else LAST_UPDATE
+    return "sucess", 200
+
+
+@app.route("/ping", methods=["GET"])
+def ping():
+    return "sucess", 200
+
+
 if __name__ == "__main__":
-    for x in db.td.find({}):
-        BeaconValues[x["_id"]] = x
+    CLIENT = pymongo.MongoClient(DB_URI,
+                                 port=DB_PORT,
+                                 tls=True,
+                                 tlsAllowInvalidHostnames=True,
+                                 tlsCAFile=DB_CA_FILE,
+                                 username=DB_USERNAME,
+                                 password=DB_PASSWORD)
+    DB = CLIENT.testdb
+    LAST_UPDATE = move_data.get_last_updated(CLIENT, "callibrationData")
+    algorithm_trilateration(CLIENT)
     app.run(debug=True)
-    client.close()
+    CLIENT.close()

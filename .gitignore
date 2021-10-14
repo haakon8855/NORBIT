@@ -3,11 +3,18 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# vscode
+.vscode/
+
 # C extensions
 *.so
 
 # env
 env.py
+BluetrackFingerprint.pem
+
+# RDS-certificate
+rds-combined-ca-bundle.pem
 
 # Distribution / packaging
 .Python

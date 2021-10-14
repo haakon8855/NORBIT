@@ -1,9 +1,9 @@
-from flask import Flask, Response, jsonify, request
-import json
+from flask import Flask, jsonify, request
 import pymongo
-import move_data
 from flask_restful import abort
 from pymongo.errors import DuplicateKeyError
+
+import move_data
 from env import *
 import algorithm_triangulation
 

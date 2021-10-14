@@ -3,11 +3,14 @@ from pandas import DataFrame
 import math
 import numpy as np
 
+ALG_VER = "trilateration"
+
 
 def algorithm(db_client: pymongo.MongoClient):
-    """Do stuff"""
-    algorithm_version = "trilateration"
-
+    """
+    Calculates predicted location for all beacons with updates. Then stores
+    the predicted locations in the database.
+    """
     data = DataFrame(
         db_client.testdb.callibrationData.find({'timestamp': 1633673758}))
     # {'timestamp': {
@@ -29,7 +32,7 @@ def algorithm(db_client: pymongo.MongoClient):
             "latitude": data["gatewayLat"],
             "longitude": data["gatewayLng"],
             "timestamp": data["timestamp"],
-            "algorithm": algorithm_version
+            "algorithm": ALG_VER
         })
     elif len(data) == 2:
         # Set in middle, towards the one with best rssi
@@ -47,7 +50,7 @@ def algorithm(db_client: pymongo.MongoClient):
             "timestamp":
             int(data["timestamp"].mean()),
             "algorithm":
-            algorithm_version
+            ALG_VER
         })
     else:
         # rssi -> dist
@@ -63,7 +66,7 @@ def algorithm(db_client: pymongo.MongoClient):
             "latitude": round(pred_lat, 6),
             "longitude": round(pred_long, 6),
             "timestamp": int(data["timestamp"].mean()),
-            "algorithm": algorithm_version
+            "algorithm": ALG_VER
         })
 
     print(predictedLocations)

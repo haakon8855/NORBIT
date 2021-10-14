@@ -6,7 +6,7 @@ import numpy as np
 ALG_VER = "trilateration"
 
 
-def algorithm(db_client: pymongo.MongoClient):
+def algorithm_trilateration(db_client: pymongo.MongoClient):
     """
     Calculates predicted location for all beacons with updates. Then stores
     the predicted locations in the database.

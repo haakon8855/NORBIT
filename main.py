@@ -5,7 +5,7 @@ from pymongo.errors import DuplicateKeyError
 
 import move_data
 from env import *
-import algorithm_triangulation
+from algorithm_trilateration import algorithm_trilateration
 
 # Configure Flask & Flask-PyMongo:
 app = Flask(__name__)
@@ -88,6 +88,6 @@ if __name__ == "__main__":
                                  password=DB_PASSWORD)
     DB = CLIENT.testdb
     LAST_UPDATE = move_data.get_last_updated(CLIENT, "callibrationData")
-    algorithm_triangulation.algorithm(CLIENT)
+    algorithm_trilateration(CLIENT)
     app.run(debug=True)
     CLIENT.close()

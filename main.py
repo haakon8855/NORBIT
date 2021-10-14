@@ -1,6 +1,5 @@
 from flask import Flask, Response, jsonify, request
 import pymongo
-from pymongo import collection
 import move_data
 from flask_restful import abort
 from pymongo.errors import DuplicateKeyError
@@ -12,14 +11,6 @@ CLIENT = None
 DB = None
 LAST_UPDATE = None
 BeaconValues = {}
-
-def init():
-    global CLIENT, DB, LAST_UPDATE
-    CLIENT = pymongo.MongoClient(DB_URI, port=DB_PORT, tls=True, tlsAllowInvalidHostnames=True,
-                             tlsCAFile=DB_CA_FILE, username=DB_USERNAME, password=DB_PASSWORD)
-    DB = CLIENT.testdb
-    LAST_UPDATE = move_data.get_last_updated(CLIENT, "callibrationData")
-
 
 def abort_beaconId_not_found(beaconId):
     if beaconId not in BeaconValues:
@@ -43,7 +34,7 @@ def resource_not_found(e):
 
 
 @app.route('/td/<int:beaconId>', methods=["POST"])
-def post_td(beaconId: int) -> Response:
+def post_td(beaconId: int):
     new_value = request.get_json()
     BeaconValues[beaconId] = new_value
     DB.td.insert_one(new_value)
@@ -72,14 +63,21 @@ def get_td(deviceId: int):
 
 
 @app.route('/update')
-def update() -> Response:
+def update():
     global LAST_UPDATE
-    updated_at = move_data.update_callibration(CLIENT , 1, 41, LAST_UPDATE)
+    updated_at = move_data.update_callibration(CLIENT, 1, 41, LAST_UPDATE)
     LAST_UPDATE = updated_at if updated_at != 0 else LAST_UPDATE
+    return "sucess", 200
+
+@app.route("/ping", methods=["GET"])
+def ping():
     return "sucess", 200
 
 
 if __name__ == "__main__":
-    init()
+    CLIENT = pymongo.MongoClient(DB_URI, port=DB_PORT, tls=True, tlsAllowInvalidHostnames=True,
+                             tlsCAFile=DB_CA_FILE, username=DB_USERNAME, password=DB_PASSWORD)
+    DB = CLIENT.testdb
+    LAST_UPDATE = move_data.get_last_updated(CLIENT, "callibrationData")
     app.run(debug=True)
     CLIENT.close()

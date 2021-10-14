@@ -2,9 +2,9 @@ import pymongo
 import datetime as dt
 from norbit_api import NorbitApi, print_response
 from env import *
+from requests.models import Response
 
-
-def convert_timestamp(tds):
+def convert_timestamp(tds: Response) -> list[dict]:
     tds = tds.json()
     for index, td in enumerate(tds):
         timestamp = td["timestamp"]
@@ -31,12 +31,8 @@ def update_callibration(db_client: pymongo.MongoClient, company_id: int, device_
     if len(tds_filtered) == 0:
         return 0
     
-    db_client.testdb.callibrationData.insert_many(tds_filtered)
+    db_client.testdb["callibrationData"].insert_many(tds_filtered)
     return max(map(lambda td: td["timestamp"], tds_filtered))
-
-
-
-
 
 
 if __name__ == "__main__":

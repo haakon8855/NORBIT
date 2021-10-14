@@ -14,7 +14,3 @@ flask-mongoengine==0.9.5
 pymongo==3.12.0
 requests
 flask-pymongo
-bson
-flask-marshmallow
-haversine
-vincenty

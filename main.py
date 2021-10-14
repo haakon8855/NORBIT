@@ -6,7 +6,7 @@ import move_data
 from flask_restful import abort
 from pymongo.errors import DuplicateKeyError
 from env import *
-import algorithm
+import algorithm_triangulation
 
 # Configure Flask & Flask-PyMongo:
 app = Flask(__name__)
@@ -26,7 +26,7 @@ def init():
                                  username=DB_USERNAME,
                                  password=DB_PASSWORD)
     DB = CLIENT.testdb
-    algorithm.algorithm(CLIENT)
+    algorithm_triangulation.algorithm(CLIENT)
     # algorithm(CLIENT)
     # print(CLIENT.testdb.listCollectionNames({}))
     #LAST_UPDATE = move_data.get_last_updated(CLIENT, "callibrationData")

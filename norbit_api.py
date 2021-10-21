@@ -166,12 +166,20 @@ def filter_data(response, fields):
         return None
 
 
-def get_time_stamp_format(year: int,
-                          month: int,
-                          day: int,
-                          hour=0,
-                          minute=0,
-                          second=0):
+def get_time_stamp_from_unicode(unicode_time: int):
+    """
+    Returns a timestamp on the format requiered by the api.
+    """
+    return datetime.datetime.utcfromtimestamp(unicode_time).strftime(
+        "%Y-%m-%dT%H:%M:%S.%f")
+
+
+def get_time_stamp_from_date(year: int,
+                             month: int,
+                             day: int,
+                             hour=0,
+                             minute=0,
+                             second=0):
     """
     Returns a timestamp on the format requiered by the api.
     """
@@ -208,8 +216,8 @@ if __name__ == "__main__":
     filtered = filter_data(response, SMART_TAG_FIELDS)
     print(json_to_text(filtered))
 
-    start = get_time_stamp_format(2021, 5, 27)
-    stop = get_time_stamp_format(2021, 5, 28)
+    start = get_time_stamp_from_date(2021, 5, 27)
+    stop = get_time_stamp_from_date(2021, 5, 28)
     response = api.get_td_by_time_interval(company_id=1,
                                            device_id=1,
                                            dateTimeFrom=start,

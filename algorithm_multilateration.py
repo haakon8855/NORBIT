@@ -1,5 +1,5 @@
 """
-Algorithm provide
+algorithm_multilateration provides location estimation using multilateration
 """
 from pandas import DataFrame
 from scipy.optimize import minimize
@@ -21,13 +21,13 @@ def algorithm_multilateration(db_client: pymongo.MongoClient,
 
     timestamps_test_set = [1633680792, 1633673904, 1633673758]
     if test_accuracy:
+        predicted_locations = []
         for timestamp in timestamps_test_set:
             data = DataFrame(
                 db_client.testdb.callibrationData.find(
                     {'timestamp': timestamp}))
             data = data[data_filter]
             data = data.drop_duplicates(subset="gatewayId", keep="last")
-            predicted_locations = []
             predicted_locations.append(prediction(data))
 
             true_loc = np.array([
@@ -42,18 +42,20 @@ def algorithm_multilateration(db_client: pymongo.MongoClient,
             accuracy = round(haversine(true_loc, pred_loc), 1)
             print(f'Timestamp: {timestamp}s', f'\nAccuracy: {accuracy}m',
                   f'\nTrue loc: {true_loc}', f'\nPred loc: {pred_loc}\n')
+        # db_client.testdb.calibrationEstimatedPosition.insert_many(predicted_locations)
         return
 
     data = DataFrame(db_client.testdb.callibrationData.find())
 
     data = data[data_filter]
+    data = data.sort_values(by=['timestamp'])
     data = data.drop_duplicates(subset="gatewayId", keep="last")
 
     predicted_locations = []
 
     # For each device_id:
     predicted_locations.append(prediction(data))
-    # db_client.testdb.estimatedPosition.insert_many(predictedLocations)
+    # db_client.testdb.calibrationEstimatedPosition.insert_many(predictedLocations)
 
 
 def prediction(data):
@@ -67,6 +69,8 @@ def prediction(data):
             "deviceId": device_id,
             "latitude": data["gatewayLat"],
             "longitude": data["gatewayLng"],
+            "true_latitude": data["positionLat"].iloc[0],
+            "true_longitude": data["positionLng"].iloc[0],
             "timestamp": data["timestamp"],
             "algorithm": "gateway_position"
         }
@@ -88,6 +92,8 @@ def prediction(data):
             "deviceId": device_id,
             "latitude": round(lat, 6),
             "longitude": round(lng, 6),
+            "true_latitude": data["positionLat"].iloc[0],
+            "true_longitude": data["positionLng"].iloc[0],
             "timestamp": int(data["timestamp"].mean()),
             "algorithm": "weighted_mean"
         }
@@ -116,6 +122,8 @@ def prediction(data):
             "deviceId": device_id,
             "latitude": round(pred_lat, 6),
             "longitude": round(pred_lng, 6),
+            "true_latitude": data["positionLat"].iloc[0],
+            "true_longitude": data["positionLng"].iloc[0],
             "timestamp": int(data["timestamp"].mean()),
             "algorithm": "trilateration"
         }

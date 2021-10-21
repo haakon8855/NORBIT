@@ -12,7 +12,7 @@ CLIENT = pymongo.MongoClient(DB_URI,
                             tlsCAFile=DB_CA_FILE,
                             username=DB_USERNAME,
                             password=DB_PASSWORD)
-LETTERS = range(97, 110)
+LETTERS = range(ord("a"), ord("f"))
 NUMBERS = range(5)
 
 def create_random_fingerprint():
@@ -32,7 +32,7 @@ def get_fingerprint(fingerprint_id: int) -> dict:
     fingerprint = CLIENT.testdb.fingerprint.find_one()
     return fingerprint
 
-def create_heatmap(fingerprint_id: int, locator_id: int) -> list:
+def create_heatmap(locator_id: int, fingerprint_id=0) -> list:
     fingerprint = get_fingerprint(fingerprint_id)
     heatmap = []
     for letter in LETTERS:
@@ -44,11 +44,16 @@ def create_heatmap(fingerprint_id: int, locator_id: int) -> list:
 
         heatmap.append(row)
     
-    return heatmap
+    return np.array(heatmap)
 
-            
+def get_all_heatmaps(locator_ids):
+    heatmaps = {}
+    for id in locator_ids:
+        heatmaps[locator_ids] = create_heatmap(id)
+    
+    return heatmaps
 
 if __name__ == "__main__":
-    print(create_heatmap(1, 8))
+    print(create_heatmap(1, 11))
     # create_random_fingerprint()
     CLIENT.close()

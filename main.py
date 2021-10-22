@@ -61,7 +61,7 @@ def dublicate_key_found(error):
 @app.route('/lastPredictedLocations/', methods=['GET'])
 def get_last_predicted_locations():
     """
-    Returns the last predicted locations for all beacons with prediction 
+    Returns the last predicted locations for all beacons with prediction
     data from our database given a device id (beacon id).
     """
     try:
@@ -76,18 +76,29 @@ def get_last_predicted_locations():
 
     data_multilat = data[data['algorithm'] == ALGORITHM_VERSIONS['multilat']]
     # Placeholder until fingerprinting data gets pushed to the db
-    data_trilat = data[data['algorithm'] == ALGORITHM_VERSIONS['trilat']]
+    data_fp = data[data['algorithm'] == ALGORITHM_VERSIONS['trilat']]
 
-    data_multilat = data_multilat.drop_duplicates(subset="deviceId",
-                                                  keep="last")
-    data_trilat = data_trilat.drop_duplicates(subset="deviceId", keep="last")
+    data_multilat = data_multilat.drop_duplicates(subset='deviceId',
+                                                  keep='last')
+    data_fp = data_fp.drop_duplicates(subset='deviceId', keep='last')
 
-    # Combine data_multiat and data_trilat on device id
+    data_multilat = data_multilat.drop(
+        ['true_latitude', 'true_longitude', 'algorithm'], axis=1)
+    data_fp = data_fp.drop(['algorithm'], axis=1)
+    data_multilat = data_multilat.rename(columns={
+        'latitude': 'multilat_latitude',
+        'longitude': 'multilat_longitude'
+    })
+    data_fp = data_fp.rename(columns={
+        'latitude': 'fp_latitude',
+        'longitude': 'fp_longitude'
+    })
 
-    print(data_multilat)
-    print(data_trilat)
+    data_combined = pd.merge(data_multilat,
+                             data_fp,
+                             on=['timestamp', 'deviceId'])
 
-    return jsonify(data_trilat.to_dict(orient="records"))
+    return jsonify(data_combined.to_dict(orient='records'))
 
 
 @app.route('/td/<int:device_id>/', methods=['GET'])

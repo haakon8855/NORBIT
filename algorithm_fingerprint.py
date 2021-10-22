@@ -2,23 +2,29 @@
 from pandas import DataFrame
 import numpy as np
 from collections import Counter
+from store_fingerprint import get_all_heatmaps
 
 ALG_VER = "fingerprinting"
 
 # For testing, should fetch test_data from database
-test_data = [[1, -20], [3, -60], [4, -50], [6, -65]]
+test_data = [[7, -20], [9, -60], [11, -50], [12, -65]]
 df = DataFrame(test_data, columns=["locator_id", "rssi"])
 
 
 # For testing, should fetch these matrices from database
-test_locator1 = np.array([[-78, -48, -25], [-60, -11, -27], [-60, -78, -16]])
-test_locator3 = np.array([[-45, -20, -66], [-46, -41, -47], [-67, -89, -50]])
-test_locator4 = np.array([[-59, -28, -55], [-45, -60, -54], [-49, -42, -65]])
-test_locator6 = np.array([[-38, -20, -98], [-58, -45, -59], [-28, -63, -46]])
+#test_locator1 = np.array([[-78, -48, -25], [-60, -11, -27], [-60, -78, -16]])
+#test_locator3 = np.array([[-45, -20, -66], [-46, -41, -47], [-67, -89, -50]])
+#test_locator4 = np.array([[-59, -28, -55], [-45, -60, -54], [-49, -42, -65]])
+#test_locator6 = np.array([[-38, -20, -98], [-58, -45, -59], [-28, -63, -46]])
 
 # Should be in this format, fetched from database. Dictionary with id and corresponding matrix
-locators = {1: test_locator1, 3: test_locator3,
-            4: test_locator4, 6: test_locator6}
+#locators = {1: test_locator1, 3: test_locator3,
+#            4: test_locator4, 6: test_locator6}
+
+locator_ids = df["locator_id"].tolist()
+
+locators = get_all_heatmaps(locator_ids)
+print("Locators: ", locators)
 
 
 def closest_indices(M, value):

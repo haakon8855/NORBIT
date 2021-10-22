@@ -9,6 +9,7 @@ flask = "*"
 flask-restful = "*"
 numpy = "*"
 pandas = "*"
+utm = "*"
 
 [dev-packages]
 

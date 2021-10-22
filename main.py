@@ -1,11 +1,15 @@
+"""
+Norbit fingerprinting backend server.
+Runs data fetch script and localization estimation algorithm.
+"""
 from flask import Flask, jsonify, request
 import pymongo
 from flask_restful import abort
 from pymongo.errors import DuplicateKeyError
 
 import move_data
-from env import *
-from algorithm_trilateration import algorithm_trilateration
+from env import DB_URI, DB_PORT, DB_USERNAME, DB_PASSWORD, DB_CA_FILE
+from algorithm_multilateration import algorithm_multilateration
 
 # Configure Flask & Flask-PyMongo:
 app = Flask(__name__)
@@ -88,6 +92,6 @@ if __name__ == "__main__":
                                  password=DB_PASSWORD)
     DB = CLIENT.testdb
     LAST_UPDATE = move_data.get_last_updated(CLIENT, "callibrationData")
-    algorithm_trilateration(CLIENT)
+    algorithm_multilateration(CLIENT, test_accuracy=True)
     app.run(debug=True)
     CLIENT.close()

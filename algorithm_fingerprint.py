@@ -1,75 +1,103 @@
-#import pymongo
+import pymongo
 from pandas import DataFrame
 import numpy as np
 from collections import Counter
 from store_fingerprint import get_all_heatmaps
+from norbit_api import NorbitApi
+
+import move_data
+from env import DB_URI, DB_PORT, DB_USERNAME, DB_PASSWORD, DB_CA_FILE
 
 ALG_VER = "fingerprinting"
 
-# For testing, should fetch test_data from database
-test_data = [[7, -20], [9, -60], [11, -50], [12, -65]]
-df = DataFrame(test_data, columns=["locator_id", "rssi"])
-
-
-# For testing, should fetch these matrices from database
-#test_locator1 = np.array([[-78, -48, -25], [-60, -11, -27], [-60, -78, -16]])
-#test_locator3 = np.array([[-45, -20, -66], [-46, -41, -47], [-67, -89, -50]])
-#test_locator4 = np.array([[-59, -28, -55], [-45, -60, -54], [-49, -42, -65]])
-#test_locator6 = np.array([[-38, -20, -98], [-58, -45, -59], [-28, -63, -46]])
-
-# Should be in this format, fetched from database. Dictionary with id and corresponding matrix
-#locators = {1: test_locator1, 3: test_locator3,
-#            4: test_locator4, 6: test_locator6}
-
-locator_ids = df["locator_id"].tolist()
-
-locators = get_all_heatmaps(locator_ids)
-print("Locators: ", locators)
-
-
 def closest_indices(M, value):
-    D = np.abs(M - (np.full(M.shape, value, dtype=int)))
+    """
+    Parameters: matrix M and an integer value. Calculates the index/indices in the matrix with 
+    the closest value to the parameter value. Returns the minimum distance between an element
+    in M and parameter value and a list with indices.
+    """
+    D = np.abs(M - (np.full(M.shape, value, dtype=int))) # find abs difference between M and a matrix filled with value
     min_value = D.min()
-    return min_value, list(zip(*np.where(D == min_value)))
+    return min_value, list(zip(*np.where(D == min_value))) 
 
 
-def algorithm_fingerprinting():
+def algorithm_fingerprinting(db_client: pymongo.MongoClient):
 
+    """
+    Estimates the location of a beacon using fingerprinting
+    """
+
+    # FETCH DATA
+    timestamps_test_set = [1633680792, 1633673904, 1633673758]
+
+    for timestamp in timestamps_test_set:
+        test_data = DataFrame(
+            db_client.testdb.callibrationData.find(
+                {'timestamp': timestamp}))
+
+    df = DataFrame(test_data, columns=["gatewayId", "rssi"])
+    if(df.empty):
+        print("No data found for given timestamps.")
+        return  
+        
+    print("Data: \n", df, "\n")
+    locator_ids = df["gatewayId"].tolist()
+
+    # FETCH HEATMAP FOR EACH LOCATOR IN DATA
+    locators = get_all_heatmaps(locator_ids)
+    #print("Locators: ", locators)
+
+
+    # CALCULATE POSITION
     possible_locations_with_id = {}
     possible_locations = []
     min_values = []
 
     for i in range(0, len(df)):
-        locator_id = df.at[i, "locator_id"]
+        locator_id = df.at[i, "gatewayId"]
         locator_matrix = locators.get(locator_id)
-        # print(locator_matrix)
         rssi = df.at[i, "rssi"]
         min_value, closest_indices_list = closest_indices(locator_matrix, rssi)
-        # use if no duplicate tuples
-        possible_locations_with_id[locator_id] = closest_indices_list
+        possible_locations_with_id[locator_id] = closest_indices_list # use if no duplicate tuples
         possible_locations += closest_indices_list  # use to find duplicate tuples
         min_values.append(min_value)
-        #print("id:", locator_id, "rssi:", rssi, "closest indices:", closest_indices_list, "\n")
 
-    #print("possible locations: ", possible_locations)
-    #print("min values", min_values)
+        # debug printing
+        print(locator_matrix)
+        print("id:", locator_id, "rssi:", rssi, "closest indices:", closest_indices_list, "\n")
+
+    print("Possible locations: ", possible_locations) # all possible locations
+    #print("min values", min_values) # collection of minimum distances from target value
 
     # Find most frequent location in list
     res, count = Counter(possible_locations).most_common()[0]
-    #print("res", res)
 
     if count != 1:
         # return most frequent location
         return res
     else:
         # find the locator with the smallest difference in rssi value and set this matrix-index to be location
+        print("No duplicate locations found. Use locator with minimum distance in rssi to estimate.")
+        print("Possible locations with id", possible_locations_with_id)
+        print("Min values", min_values)
         minimum = min(min_values)
-        #print("possible locations with id", possible_locations_with_id)
         idx = min_values.index(minimum)
-        locator_id = df.at[idx, "locator_id"]
+        locator_id = df.at[idx, "gatewayId"]
         res = possible_locations_with_id[locator_id][0]
         return res
 
 
-location = algorithm_fingerprinting()
+CLIENT = pymongo.MongoClient(DB_URI,
+                                port=DB_PORT,
+                                tls=True,
+                                tlsAllowInvalidHostnames=True,
+                                tlsCAFile=DB_CA_FILE,
+                                username=DB_USERNAME,
+                                password=DB_PASSWORD)
+DB = CLIENT.testdb
+LAST_UPDATE = move_data.get_last_updated(CLIENT, "callibrationData")
+
+location = algorithm_fingerprinting(CLIENT)
 print("Estimated location: ", location)
+
+CLIENT.close()

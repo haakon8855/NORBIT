@@ -10,7 +10,7 @@ def convert_timestamp(tds: Response) -> list[dict]:
     tds = tds.json()
     for index, td in enumerate(tds):
         timestamp = td["timestamp"]
-        timestamp = dt.datetime.strptime(timestamp, "%Y-%m-%dT%H:%M:%S")
+        timestamp = dt.datetime.strptime(timestamp, "%Y-%m-%dT%H:%M:%S.%f")
         td["timestamp"] = int(timestamp.timestamp())
         tds[index] = td
 

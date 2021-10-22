@@ -7,6 +7,10 @@ name = "pypi"
 pymongo = {extras = ["srv"], version = "*"}
 flask = "*"
 flask-restful = "*"
+numpy = "*"
+pandas = "*"
+utm = "*"
+scipy = "*"
 
 [dev-packages]
 

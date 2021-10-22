@@ -39,7 +39,7 @@ def algorithm_fingerprinting(db_client: pymongo.MongoClient):
     if(df.empty):
         print("No data found for given timestamps.")
         return  
-        
+
     print("Data: \n", df, "\n")
     locator_ids = df["gatewayId"].tolist()
 
@@ -94,8 +94,6 @@ CLIENT = pymongo.MongoClient(DB_URI,
                                 tlsCAFile=DB_CA_FILE,
                                 username=DB_USERNAME,
                                 password=DB_PASSWORD)
-DB = CLIENT.testdb
-LAST_UPDATE = move_data.get_last_updated(CLIENT, "callibrationData")
 
 location = algorithm_fingerprinting(CLIENT)
 print("Estimated location: ", location)

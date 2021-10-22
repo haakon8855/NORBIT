@@ -70,7 +70,7 @@ def create_heatmap(locator_id: int, fingerprint_id=0) -> list:
                 cell = fingerprint[cell_name]
             else:
                 cell = {}
-            val = cell[str(locator_id)]["rssi"] if str(locator_id) in cell else 0
+            val = cell[str(locator_id)]["rssi"] if str(locator_id) in cell else -1000
             row.append(val)
 
         heatmap.append(row)

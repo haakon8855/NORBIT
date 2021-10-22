@@ -10,6 +10,7 @@ flask-restful = "*"
 numpy = "*"
 pandas = "*"
 utm = "*"
+scipy = "*"
 
 [dev-packages]
 

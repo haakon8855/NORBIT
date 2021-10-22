@@ -6,10 +6,11 @@ from flask import Flask, jsonify, request
 import pymongo
 from flask_restful import abort
 from pymongo.errors import DuplicateKeyError
+import pandas as pd
 
 import move_data
 from env import DB_URI, DB_PORT, DB_USERNAME, DB_PASSWORD, DB_CA_FILE
-from algorithm_multilateration import algorithm_multilateration
+from algorithm_multilateration import algorithm_multilateration, ALGORITHM_VERSIONS
 
 # Configure Flask & Flask-PyMongo:
 app = Flask(__name__)
@@ -19,58 +20,96 @@ LAST_UPDATE = None
 BeaconValues = {}
 
 
-def abort_beaconId_not_found(beaconId):
-    if beaconId not in BeaconValues:
+def abort_beaconId_not_found(beacon_id):
+    if beacon_id not in BeaconValues:
         abort(404, message="Beacon Id is not found")
 
 
 @app.errorhandler(404)
-def resource_not_found(e):
+def resource_not_found(error):
     """
     An error-handler to ensure that 404 errors are returned as JSON.
     """
-    return jsonify(error=str(e)), 404
+    return jsonify(error=str(error)), 404
 
 
 @app.errorhandler(DuplicateKeyError)
-def dublicate_key_found(e):
+def dublicate_key_found(error):
     """
     An error-handler to ensure that MongoDB duplicate key errors are returned as JSON.
     """
-    return jsonify(error=f"Duplicate key error.{e}"), 400
+    return jsonify(error=f"Duplicate key error.{error}"), 400
 
 
-@app.route('/td/<int:beaconId>', methods=["POST"])
-def post_td(beaconId: int):
-    new_value = request.get_json()
-    BeaconValues[beaconId] = new_value
-    DB.td.insert_one(new_value)
-    return jsonify(message="success"), 201
+# Trenger vi egentlig disse?
+# @app.route('/td/<int:beaconId>', methods=["POST"])
+# def post_td(beaconId: int):
+#     new_value = request.get_json()
+#     BeaconValues[beaconId] = new_value
+#     DB.td.insert_one(new_value)
+#     return jsonify(message="success"), 201
+
+# @app.route('/td/<int:beaconId>', methods=["DELETE"])
+# def delete_td(beaconId):
+#     abort_beaconId_not_found(beaconId)
+#     del BeaconValues[beaconId]
+
+#     DB.td.delete_many({"_id": beaconId})
+#     return "", 204
 
 
-@app.route('/td/<int:beaconId>', methods=["DELETE"])
-def delete_td(beaconId):
-    abort_beaconId_not_found(beaconId)
-    del BeaconValues[beaconId]
-
-    DB.td.delete_many({"_id": beaconId})
-    return "", 204
-
-
-@app.route('/td/<int:deviceId>/', methods=['GET'])
-def get_td(deviceId: int):
+@app.route('/lastPredictedLocations/', methods=['GET'])
+def get_last_predicted_locations():
+    """
+    Returns the last predicted locations for all beacons with prediction 
+    data from our database given a device id (beacon id).
+    """
     try:
-        td = DB.td.find({"_id": int(deviceId)})[0]
+        predicted_locations = DB.calibrationEstimatedPosition.find({})
+    except IndexError:
+        print("Index error")
+        return "", 404
+
+    data = pd.DataFrame(predicted_locations).drop("_id", axis=1)
+
+    data = data.sort_values(by=['timestamp'])
+
+    data_multilat = data[data['algorithm'] == ALGORITHM_VERSIONS['multilat']]
+    # Placeholder until fingerprinting data gets pushed to the db
+    data_trilat = data[data['algorithm'] == ALGORITHM_VERSIONS['trilat']]
+
+    data_multilat = data_multilat.drop_duplicates(subset="deviceId",
+                                                  keep="last")
+    data_trilat = data_trilat.drop_duplicates(subset="deviceId", keep="last")
+
+    # Combine data_multiat and data_trilat on device id
+
+    print(data_multilat)
+    print(data_trilat)
+
+    return jsonify(data_trilat.to_dict(orient="records"))
+
+
+@app.route('/td/<int:device_id>/', methods=['GET'])
+def get_td(device_id: int):
+    """
+    Returns the telemetry data from our database given a device id (beacon id).
+    """
+    try:
+        td = DB.td.find({"_id": int(device_id)})[0]
     except IndexError:
         print("index error")
         return "", 404
 
-    BeaconValues[deviceId] = td
+    BeaconValues[device_id] = td
     return jsonify([td])
 
 
 @app.route('/update')
 def update():
+    """
+    Updates our database by fetching new data from Norbit Bluetrack database.
+    """
     global LAST_UPDATE
     updated_at = move_data.update_callibration(CLIENT, 1, 41, LAST_UPDATE)
     LAST_UPDATE = updated_at if updated_at != 0 else LAST_UPDATE
@@ -79,6 +118,9 @@ def update():
 
 @app.route("/ping", methods=["GET"])
 def ping():
+    """
+    Responds to the ping endpoint with success.
+    """
     return "sucess", 200
 
 
@@ -92,6 +134,6 @@ if __name__ == "__main__":
                                  password=DB_PASSWORD)
     DB = CLIENT.testdb
     LAST_UPDATE = move_data.get_last_updated(CLIENT, "callibrationData")
-    algorithm_multilateration(CLIENT, test_accuracy=True)
+    # algorithm_multilateration(CLIENT, test_accuracy=True)
     app.run(debug=True)
     CLIENT.close()

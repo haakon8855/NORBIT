@@ -2,7 +2,7 @@
 Norbit fingerprinting backend server.
 Runs data fetch script and localization estimation algorithm.
 """
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify
 import pymongo
 from flask_restful import abort
 from pymongo.errors import DuplicateKeyError
@@ -145,6 +145,6 @@ if __name__ == "__main__":
                                  password=DB_PASSWORD)
     DB = CLIENT.testdb
     LAST_UPDATE = move_data.get_last_updated(CLIENT, "callibrationData")
-    # algorithm_multilateration(CLIENT, test_accuracy=True)
+    algorithm_multilateration(CLIENT, test_accuracy=True)
     app.run(debug=True)
     CLIENT.close()

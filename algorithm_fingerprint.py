@@ -1,14 +1,16 @@
-import pymongo
-from pandas import DataFrame
-import numpy as np
+"""
+algorithm_fingerprint provides location estimation using fingerprinting
+"""
 from collections import Counter
-from store_fingerprint import get_all_heatmaps
-from norbit_api import NorbitApi
+from pandas import DataFrame
+import pymongo
+import numpy as np
 
-import move_data
 from env import DB_URI, DB_PORT, DB_USERNAME, DB_PASSWORD, DB_CA_FILE
+from store_fingerprint import get_all_heatmaps
 
 ALG_VER = "fingerprinting"
+
 
 def closest_indices(M, value):
     """
@@ -16,13 +18,14 @@ def closest_indices(M, value):
     the closest value to the parameter value. Returns the minimum distance between an element
     in M and parameter value and a list with indices.
     """
-    D = np.abs(M - (np.full(M.shape, value, dtype=int))) # find abs difference between M and a matrix filled with value
+    D = np.abs(
+        M - (np.full(M.shape, value, dtype=int))
+    )  # find abs difference between M and a matrix filled with value
     min_value = D.min()
-    return min_value, list(zip(*np.where(D == min_value))) 
+    return min_value, list(zip(*np.where(D == min_value)))
 
 
 def algorithm_fingerprinting(db_client: pymongo.MongoClient):
-
     """
     Estimates the location of a beacon using fingerprinting
     """
@@ -32,13 +35,12 @@ def algorithm_fingerprinting(db_client: pymongo.MongoClient):
 
     for timestamp in timestamps_test_set:
         test_data = DataFrame(
-            db_client.testdb.callibrationData.find(
-                {'timestamp': timestamp}))
+            db_client.testdb.callibrationData.find({'timestamp': timestamp}))
 
     df = DataFrame(test_data, columns=["gatewayId", "rssi"])
-    if(df.empty):
+    if (df.empty):
         print("No data found for given timestamps.")
-        return  
+        return
 
     print("Data: \n", df, "\n")
     locator_ids = df["gatewayId"].tolist()
@@ -46,7 +48,6 @@ def algorithm_fingerprinting(db_client: pymongo.MongoClient):
     # FETCH HEATMAP FOR EACH LOCATOR IN DATA
     locators = get_all_heatmaps(locator_ids)
     #print("Locators: ", locators)
-
 
     # CALCULATE POSITION
     possible_locations_with_id = {}
@@ -58,15 +59,17 @@ def algorithm_fingerprinting(db_client: pymongo.MongoClient):
         locator_matrix = locators.get(locator_id)
         rssi = df.at[i, "rssi"]
         min_value, closest_indices_list = closest_indices(locator_matrix, rssi)
-        possible_locations_with_id[locator_id] = closest_indices_list # use if no duplicate tuples
+        possible_locations_with_id[
+            locator_id] = closest_indices_list  # use if no duplicate tuples
         possible_locations += closest_indices_list  # use to find duplicate tuples
         min_values.append(min_value)
 
         # debug printing
         print(locator_matrix)
-        print("id:", locator_id, "rssi:", rssi, "closest indices:", closest_indices_list, "\n")
+        print("id:", locator_id, "rssi:", rssi, "closest indices:",
+              closest_indices_list, "\n")
 
-    print("Possible locations: ", possible_locations) # all possible locations
+    print("Possible locations: ", possible_locations)  # all possible locations
     #print("min values", min_values) # collection of minimum distances from target value
 
     # Find most frequent location in list
@@ -77,7 +80,9 @@ def algorithm_fingerprinting(db_client: pymongo.MongoClient):
         return res
     else:
         # find the locator with the smallest difference in rssi value and set this matrix-index to be location
-        print("No duplicate locations found. Use locator with minimum distance in rssi to estimate.")
+        print(
+            "No duplicate locations found. Use locator with minimum distance in rssi to estimate."
+        )
         print("Possible locations with id", possible_locations_with_id)
         print("Min values", min_values)
         minimum = min(min_values)
@@ -88,12 +93,12 @@ def algorithm_fingerprinting(db_client: pymongo.MongoClient):
 
 
 CLIENT = pymongo.MongoClient(DB_URI,
-                                port=DB_PORT,
-                                tls=True,
-                                tlsAllowInvalidHostnames=True,
-                                tlsCAFile=DB_CA_FILE,
-                                username=DB_USERNAME,
-                                password=DB_PASSWORD)
+                             port=DB_PORT,
+                             tls=True,
+                             tlsAllowInvalidHostnames=True,
+                             tlsCAFile=DB_CA_FILE,
+                             username=DB_USERNAME,
+                             password=DB_PASSWORD)
 
 location = algorithm_fingerprinting(CLIENT)
 print("Estimated location: ", location)

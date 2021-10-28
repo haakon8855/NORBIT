@@ -42,7 +42,8 @@ def algorithm_multilateration(db_client: pymongo.MongoClient,
             accuracy = round(haversine(true_loc, pred_loc), 1)
             print(f'Timestamp: {timestamp}s', f'\nAccuracy: {accuracy}m',
                   f'\nTrue loc: {true_loc}', f'\nPred loc: {pred_loc}\n')
-        # db_client.testdb.calibrationEstimatedPosition.insert_many(predicted_locations)
+        # db_client.testdb.calibrationEstimatedPosition.insert_many(
+        #     predicted_locations)
         return
 
     data = DataFrame(db_client.testdb.callibrationData.find())
@@ -125,7 +126,7 @@ def prediction(data):
             "true_latitude": data["positionLat"].iloc[0],
             "true_longitude": data["positionLng"].iloc[0],
             "timestamp": int(data["timestamp"].mean()),
-            "algorithm": "trilateration"
+            "algorithm": "multilateration"
         }
 
 

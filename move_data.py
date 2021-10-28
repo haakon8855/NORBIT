@@ -6,7 +6,7 @@ from norbit_api import NorbitApi
 from env import *
 
 
-def convert_timestamp(tds: Response) -> list[dict]:
+def convert_timestamp(tds: Response) -> list:
     tds = tds.json()
     for index, td in enumerate(tds):
         timestamp = td["timestamp"]

@@ -22,7 +22,7 @@ def algorithm_multilateration(db_client: pymongo.MongoClient,
     timestamps_test_set = [1633680792, 1633673904, 1633673758]
     if test_accuracy:
         predicted_locations = []
-        for timestamp in timestamps_test_set:
+        for i, timestamp in enumerate(timestamps_test_set):
             data = DataFrame(
                 db_client.testdb.callibrationData.find(
                     {'timestamp': timestamp}))
@@ -31,12 +31,12 @@ def algorithm_multilateration(db_client: pymongo.MongoClient,
             predicted_locations.append(prediction(data))
 
             true_loc = np.array([
-                round(data['positionLat'].iloc[0], 5),
-                round(data['positionLng'].iloc[0], 5)
+                round(data['positionLat'].iloc[i], 5),
+                round(data['positionLng'].iloc[i], 5)
             ])
             pred_loc = np.array([
-                round(predicted_locations[0]['latitude'], 5),
-                round(predicted_locations[0]['longitude'], 5)
+                round(predicted_locations[i]['latitude'], 5),
+                round(predicted_locations[i]['longitude'], 5)
             ])
 
             accuracy = round(haversine(true_loc, pred_loc), 1)

@@ -7,13 +7,6 @@ import numpy as np
 import pymongo
 import utm
 
-ALGORITHM_VERSIONS = {
-    "gateway_pos": "gateway_position",
-    "weighted_mean": "weighted_mean",
-    "trilat": "trilateration",
-    "multilat": "multilateration",
-}
-
 
 def algorithm_multilateration(db_client: pymongo.MongoClient,
                               test_accuracy: bool = False):

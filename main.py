@@ -10,7 +10,7 @@ import pandas as pd
 
 import move_data
 from env import DB_URI, DB_PORT, DB_USERNAME, DB_PASSWORD, DB_CA_FILE
-from algorithm_multilateration import algorithm_multilateration, ALGORITHM_VERSIONS
+from algorithm_multilateration import algorithm_multilateration
 
 # Configure Flask & Flask-PyMongo:
 app = Flask(__name__)
@@ -18,6 +18,14 @@ CLIENT = None
 DB = None
 LAST_UPDATE = None
 BeaconValues = {}
+
+ALGORITHM_VERSIONS = {
+    "gateway_pos": "gateway_position",
+    "weighted_mean": "weighted_mean",
+    "trilat": "trilateration",
+    "multilat": "multilateration",
+    "fp": "fingerprinting",
+}
 
 
 def abort_beaconId_not_found(beacon_id):
@@ -41,23 +49,6 @@ def dublicate_key_found(error):
     return jsonify(error=f"Duplicate key error.{error}"), 400
 
 
-# Trenger vi egentlig disse?
-# @app.route('/td/<int:beaconId>', methods=["POST"])
-# def post_td(beaconId: int):
-#     new_value = request.get_json()
-#     BeaconValues[beaconId] = new_value
-#     DB.td.insert_one(new_value)
-#     return jsonify(message="success"), 201
-
-# @app.route('/td/<int:beaconId>', methods=["DELETE"])
-# def delete_td(beaconId):
-#     abort_beaconId_not_found(beaconId)
-#     del BeaconValues[beaconId]
-
-#     DB.td.delete_many({"_id": beaconId})
-#     return "", 204
-
-
 @app.route('/lastPredictedLocations/', methods=['GET'])
 def get_last_predicted_locations():
     """
@@ -65,25 +56,28 @@ def get_last_predicted_locations():
     data from our database given a device id (beacon id).
     """
     try:
-        predicted_locations = DB.calibrationEstimatedPosition.find({})
+        predicted_locations = DB.calibrationEstimatedPosition.find(
+            {'deviceId': {
+                "$ne": 41
+            }}, {"_id": 0})
     except IndexError:
         print("Index error")
         return "", 404
 
-    data = pd.DataFrame(predicted_locations).drop("_id", axis=1)
+    data = pd.DataFrame(predicted_locations)
 
     data = data.sort_values(by=['timestamp'])
 
     data_multilat = data[data['algorithm'] == ALGORITHM_VERSIONS['multilat']]
     # Placeholder until fingerprinting data gets pushed to the db
-    data_fp = data[data['algorithm'] == ALGORITHM_VERSIONS['trilat']]
+    data_fp = data[data['algorithm'] == ALGORITHM_VERSIONS['fp']]
 
     data_multilat = data_multilat.drop_duplicates(subset='deviceId',
                                                   keep='last')
     data_fp = data_fp.drop_duplicates(subset='deviceId', keep='last')
 
     data_multilat = data_multilat.drop(
-        ['true_latitude', 'true_longitude', 'algorithm'], axis=1)
+        ['true_latitude', 'true_longitude', 'algorithm', 'timestamp'], axis=1)
     data_fp = data_fp.drop(['algorithm'], axis=1)
     data_multilat = data_multilat.rename(columns={
         'latitude': 'multilat_latitude',
@@ -94,9 +88,7 @@ def get_last_predicted_locations():
         'longitude': 'fp_longitude'
     })
 
-    data_combined = pd.merge(data_multilat,
-                             data_fp,
-                             on=['timestamp', 'deviceId'])
+    data_combined = pd.merge(data_multilat, data_fp, on=['deviceId'])
 
     return jsonify(data_combined.to_dict(orient='records'))
 

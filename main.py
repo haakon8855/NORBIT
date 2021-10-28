@@ -69,7 +69,6 @@ def get_last_predicted_locations():
     data = data.sort_values(by=['timestamp'])
 
     data_multilat = data[data['algorithm'] == ALGORITHM_VERSIONS['multilat']]
-    # Placeholder until fingerprinting data gets pushed to the db
     data_fp = data[data['algorithm'] == ALGORITHM_VERSIONS['fp']]
 
     data_multilat = data_multilat.drop_duplicates(subset='deviceId',

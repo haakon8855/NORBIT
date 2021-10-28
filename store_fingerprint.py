@@ -9,17 +9,18 @@ from map_squares import map_squares
 from move_data import convert_timestamp
 
 CLIENT = pymongo.MongoClient(DB_URI,
-                            port=DB_PORT,
-                            tls=True,
-                            tlsAllowInvalidHostnames=True,
-                            tlsCAFile=DB_CA_FILE,
-                            username=DB_USERNAME,
-                            password=DB_PASSWORD)
-LETTERS = range(ord("a"), ord("h")+1)
+                             port=DB_PORT,
+                             tls=True,
+                             tlsAllowInvalidHostnames=True,
+                             tlsCAFile=DB_CA_FILE,
+                             username=DB_USERNAME,
+                             password=DB_PASSWORD)
+LETTERS = range(ord("a"), ord("h") + 1)
 NUMBERS = range(1, 5)
 API = NorbitApi()
 SQUARES = map_squares
 COLUMNS = ["gatewayId", "rssi", "timestamp"]
+
 
 def create_random_fingerprint():
     fingerprint = {}
@@ -28,17 +29,22 @@ def create_random_fingerprint():
         for i in LETTERS:
             square_name = chr(char) + str(i)
             fingerprint[square_name] = {}
-            locators = np.random.choice(locator_ids, random.randint(1, len(locator_ids)-1))
+            locators = np.random.choice(
+                locator_ids, random.randint(1,
+                                            len(locator_ids) - 1))
             for locator in locators:
-                fingerprint[square_name][str(locator)] = random.randint(-100, -20)
-            
+                fingerprint[square_name][str(locator)] = random.randint(
+                    -100, -20)
+
     CLIENT.testdb.fingerprint.insert_one(fingerprint)
+
 
 def get_square_values(square):
     deviceId, timestamp = SQUARES[square]
     date_time_from = get_time_stamp_from_unicode(timestamp - 121)
     date_time_to = get_time_stamp_from_unicode(timestamp + 121)
-    response = API.get_td_by_time_interval(1, deviceId + 9, date_time_from, date_time_to)
+    response = API.get_td_by_time_interval(1, deviceId + 9, date_time_from,
+                                           date_time_to)
     values = pd.DataFrame(convert_timestamp(response))
     if values.empty:
         return {}
@@ -48,6 +54,7 @@ def get_square_values(square):
     values["gatewayId"] = values["gatewayId"].apply(str)
     return values.set_index("gatewayId").T.to_dict()
 
+
 def create_fingerprint():
     global SQUARES
     fingerprint = {}
@@ -55,9 +62,11 @@ def create_fingerprint():
         fingerprint[square] = get_square_values(square)
     CLIENT.testdb.fingerprint.insert_one(fingerprint)
 
+
 def get_fingerprint(fingerprint_id: int) -> dict:
     fingerprint = CLIENT.testdb.fingerprint.find_one()
     return fingerprint
+
 
 def create_heatmap(locator_id: int, fingerprint_id=0) -> list:
     fingerprint = get_fingerprint(fingerprint_id)
@@ -70,19 +79,22 @@ def create_heatmap(locator_id: int, fingerprint_id=0) -> list:
                 cell = fingerprint[cell_name]
             else:
                 cell = {}
-            val = cell[str(locator_id)]["rssi"] if str(locator_id) in cell else 0
+            val = cell[str(locator_id)]["rssi"] if str(
+                locator_id) in cell else -1000
             row.append(val)
 
         heatmap.append(row)
-    
+
     return np.array(heatmap)
+
 
 def get_all_heatmaps(locator_ids):
     heatmaps = {}
     for id in locator_ids:
         heatmaps[id] = create_heatmap(id)
-    
+
     return heatmaps
+
 
 if __name__ == "__main__":
     # print(create_heatmap(11))

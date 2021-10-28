@@ -23,9 +23,7 @@ def distance_matrix(matrix, value):
     """
     Returns the abs difference between M and a matrix filled with value
     """
-    dist = np.abs(
-        matrix - (np.full(matrix.shape, value, dtype=int))
-    )  # find abs difference between M and a matrix filled with value
+    dist = np.abs(matrix - (np.full(matrix.shape, value, dtype=int)))
     return dist
 
 

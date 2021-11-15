@@ -7,7 +7,7 @@ import pymongo
 import numpy as np
 
 from env import DB_URI, DB_PORT, DB_USERNAME, DB_PASSWORD, DB_CA_FILE
-from store_fingerprint import get_all_heatmaps
+from store_fingerprint import StoreFingerprint
 
 ALG_VER = "fingerprinting"
 
@@ -18,6 +18,7 @@ class FingerprintingV1():
     """
     def __init__(self, db_client: pymongo.MongoClient):
         self.db_client = db_client
+        self.store_fingerprint = StoreFingerprint(db_client)
 
     def algorithm(self):
         """
@@ -40,7 +41,7 @@ class FingerprintingV1():
         locator_ids = data["gatewayId"].tolist()
 
         # FETCH HEATMAP FOR EACH LOCATOR IN DATA
-        locators = get_all_heatmaps(locator_ids)
+        locators = self.store_fingerprint.get_all_heatmaps(locator_ids)
         #print("Locators: ", locators)
 
         # CALCULATE POSITION

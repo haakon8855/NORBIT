@@ -11,14 +11,6 @@ from norbit_api import NorbitApi, get_time_stamp_from_unicode
 from map_squares import map_squares
 from move_data import MoveData
 
-CLIENT = pymongo.MongoClient(DB_URI,
-                             port=DB_PORT,
-                             tls=True,
-                             tlsAllowInvalidHostnames=True,
-                             tlsCAFile=DB_CA_FILE,
-                             username=DB_USERNAME,
-                             password=DB_PASSWORD)
-
 
 class StoreFingerprint():
     """
@@ -124,6 +116,13 @@ class StoreFingerprint():
 
 
 if __name__ == "__main__":
+    CLIENT = pymongo.MongoClient(DB_URI,
+                                 port=DB_PORT,
+                                 tls=True,
+                                 tlsAllowInvalidHostnames=True,
+                                 tlsCAFile=DB_CA_FILE,
+                                 username=DB_USERNAME,
+                                 password=DB_PASSWORD)
     store_fingerprint = StoreFingerprint(CLIENT)
     print(store_fingerprint.get_all_heatmaps([8, 12, 7, 10, 11, 9]))
     CLIENT.close()

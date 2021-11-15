@@ -6,8 +6,8 @@ import pandas as pd
 import numpy as np
 
 from env import DB_URI, DB_PORT, DB_USERNAME, DB_PASSWORD, DB_CA_FILE
-from move_data import convert_timestamp
-from store_fingerprint import get_all_heatmaps
+from move_data import MoveData
+from store_fingerprint import StoreFingerprint
 from norbit_api import NorbitApi, get_time_stamp_from_unicode
 from coords import coords
 
@@ -41,6 +41,7 @@ class FingerprintingV2():
     """
     def __init__(self, db_client: pymongo.MongoClient):
         self.db_client = db_client
+        self.store_fingerprint = StoreFingerprint(db_client)
 
     def algorithm(self):
         """
@@ -64,7 +65,7 @@ class FingerprintingV2():
         locator_ids = data["gatewayId"].tolist()
 
         # FETCH HEATMAP FOR EACH LOCATOR IN DATA
-        locators = get_all_heatmaps(locator_ids)
+        locators = self.store_fingerprint.get_all_heatmaps(locator_ids)
 
         # CALCULATE POSITION
         dist_values = []
@@ -145,7 +146,7 @@ class TestFingerprinting():
         date_time_to = get_time_stamp_from_unicode(timestamp - 60 * 3)
         response = API.get_td_by_time_interval(1, device_id + 9,
                                                date_time_from, date_time_to)
-        values = pd.DataFrame(convert_timestamp(response))
+        values = pd.DataFrame(MoveData.convert_timestamp(response))
         values = values.sort_values("timestamp", ascending=False)
         values = values.drop_duplicates(subset="gatewayId", keep="first")
         values["gatewayId"] = values["gatewayId"].apply(str)

@@ -6,16 +6,15 @@ import pandas as pd
 import numpy as np
 
 from env import DB_URI, DB_PORT, DB_USERNAME, DB_PASSWORD, DB_CA_FILE
-from move_data import MoveData
-from store_fingerprint import StoreFingerprint
-from norbit_api import NorbitApi, get_time_stamp_from_unicode
-from coords import coords
+from data_processing.move_data import MoveData
+from data_processing.store_fingerprint import StoreFingerprint
+from data_processing.norbit_api import NorbitApi, get_time_stamp_from_unicode
+from data.coords import coords
 
 ALG_VER = "fingerprinting"
 LOCATOR_IDS = [7, 8, 9, 10, 11, 12]
 
 API = NorbitApi()
-COORDS = coords
 
 
 def distance_matrix(matrix, value):
@@ -151,18 +150,3 @@ class TestFingerprinting():
         values = values.drop_duplicates(subset="gatewayId", keep="first")
         values["gatewayId"] = values["gatewayId"].apply(str)
         return values, device_id
-
-
-CLIENT = pymongo.MongoClient(DB_URI,
-                             port=DB_PORT,
-                             tls=True,
-                             tlsAllowInvalidHostnames=True,
-                             tlsCAFile=DB_CA_FILE,
-                             username=DB_USERNAME,
-                             password=DB_PASSWORD)
-
-FINGERPRINTING = FingerprintingV2(CLIENT)
-prediction = FINGERPRINTING.algorithm()
-print(prediction)
-
-CLIENT.close()

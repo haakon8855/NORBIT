@@ -6,7 +6,7 @@ import datetime as dt
 import pymongo
 from requests.models import Response
 
-from norbit_api import NorbitApi
+from data_processing.norbit_api import NorbitApi
 
 
 class MoveData():

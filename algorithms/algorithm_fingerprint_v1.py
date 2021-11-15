@@ -7,7 +7,7 @@ import pymongo
 import numpy as np
 
 from env import DB_URI, DB_PORT, DB_USERNAME, DB_PASSWORD, DB_CA_FILE
-from store_fingerprint import StoreFingerprint
+from data_processing.store_fingerprint import StoreFingerprint
 
 ALG_VER = "fingerprinting"
 
@@ -100,18 +100,3 @@ class FingerprintingV1():
         )  # find abs difference between M and a matrix filled with value
         min_value = dist.min()
         return min_value, list(zip(*np.where(dist == min_value)))
-
-
-CLIENT = pymongo.MongoClient(DB_URI,
-                             port=DB_PORT,
-                             tls=True,
-                             tlsAllowInvalidHostnames=True,
-                             tlsCAFile=DB_CA_FILE,
-                             username=DB_USERNAME,
-                             password=DB_PASSWORD)
-
-FINGERPRINTINGV1 = FingerprintingV1(CLIENT)
-prediction = FINGERPRINTINGV1.algorithm()
-print("Estimated location: ", prediction)
-
-CLIENT.close()

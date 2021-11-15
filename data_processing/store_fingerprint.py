@@ -6,10 +6,10 @@ import random
 import pymongo
 import numpy as np
 import pandas as pd
+from data_processing.norbit_api import NorbitApi, get_time_stamp_from_unicode
+from data_processing.move_data import MoveData
 from env import DB_URI, DB_PORT, DB_CA_FILE, DB_USERNAME, DB_PASSWORD
-from norbit_api import NorbitApi, get_time_stamp_from_unicode
-from map_squares import map_squares
-from move_data import MoveData
+from data.map_squares import map_squares
 
 
 class StoreFingerprint():
@@ -113,16 +113,3 @@ class StoreFingerprint():
                         -100, -20)
 
         self.db_client.testdb.fingerprint.insert_one(fingerprint)
-
-
-if __name__ == "__main__":
-    CLIENT = pymongo.MongoClient(DB_URI,
-                                 port=DB_PORT,
-                                 tls=True,
-                                 tlsAllowInvalidHostnames=True,
-                                 tlsCAFile=DB_CA_FILE,
-                                 username=DB_USERNAME,
-                                 password=DB_PASSWORD)
-    store_fingerprint = StoreFingerprint(CLIENT)
-    print(store_fingerprint.get_all_heatmaps([8, 12, 7, 10, 11, 9]))
-    CLIENT.close()

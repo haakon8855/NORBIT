@@ -8,9 +8,12 @@ from flask_restful import abort
 from pymongo.errors import DuplicateKeyError
 import pandas as pd
 
-from move_data import MoveData
+from data_processing.move_data import MoveData
+from data_processing.store_fingerprint import StoreFingerprint
+from algorithms.algorithm_multilateration import Multilateration
+from algorithms.algorithm_fingerprint_v1 import FingerprintingV1
+from algorithms.algorithm_fingerprint_v2 import FingerprintingV2
 from env import DB_URI, DB_PORT, DB_USERNAME, DB_PASSWORD, DB_CA_FILE
-from algorithm_multilateration import Multilateration
 
 # Configure Flask & Flask-PyMongo:
 app = Flask(__name__)
@@ -140,8 +143,16 @@ if __name__ == "__main__":
                                  password=DB_PASSWORD)
     MOVE_DATA = MoveData(CLIENT)
     DB = CLIENT.testdb
-    LAST_UPDATE = MOVE_DATA.get_last_updated("calibrationData")
-    multilateration = Multilateration(CLIENT, True)
-    multilateration.algorithm()
+
+    LAST_UPDATE = MOVE_DATA.get_last_updated("callibrationData")
+
+    store_fingerprint = StoreFingerprint(CLIENT)
+    print(store_fingerprint.get_all_heatmaps([8, 12, 7, 10, 11, 9]))
+
+    algorithm = Multilateration(CLIENT, True)
+    # algorithm = FingerprintingV1(CLIENT)
+    # algorithm = FingerprintingV2(CLIENT)
+    prediction = algorithm.algorithm()
+    print('\n', prediction, '\n')
     app.run(debug=True)
     CLIENT.close()

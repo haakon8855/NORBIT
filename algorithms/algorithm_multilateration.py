@@ -66,7 +66,7 @@ class Multilateration():
                       f'\nPred loc: {pred_loc}\n')
             # self.db_client.testdb.calibrationEstimatedPosition.insert_many(
             #     predicted_locations)
-            return
+            return pred_loc
 
         data = DataFrame(self.db_client.testdb.callibrationData.find())
 

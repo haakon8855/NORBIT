@@ -205,24 +205,3 @@ def print_response(response: requests.models.Response):
         print(json_to_text(response.json()))
     except:
         print(response.text())
-
-
-if __name__ == "__main__":
-    api = NorbitApi()
-
-    api_response = api.get_gateways(company_id=1)
-    filtered = filter_data(api_response, GATEWAY_FIELDS)
-    print(json_to_text(filtered))
-
-    api_response = api.get_devices("smart_tag")
-    filtered = filter_data(api_response, SMART_TAG_FIELDS)
-    print(json_to_text(filtered))
-
-    start = get_time_stamp_from_date(2021, 5, 27)
-    stop = get_time_stamp_from_date(2021, 5, 28)
-    api_response = api.get_td_by_time_interval(company_id=1,
-                                               device_id=1,
-                                               date_time_from=start,
-                                               date_time_to=stop)
-    filtered = filter_data(api_response, TD_FIELDS)
-    print(json_to_text(filtered))

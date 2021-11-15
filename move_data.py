@@ -40,8 +40,8 @@ class MoveData():
         })
         return max(map(lambda td: td["timestamp"], data))
 
-    def update_callibration(self, company_id: int, device_id: int,
-                            last_updated: int) -> int:
+    def update_calibration(self, company_id: int, device_id: int,
+                           last_updated: int) -> int:
         """
         Fetches calibration packets from NORBIT's API, given it's device_id.
         """

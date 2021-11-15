@@ -104,7 +104,7 @@ def get_td(device_id: int):
     try:
         telem_data = DB.td.find({"_id": int(device_id)})[0]
     except IndexError:
-        print("index error")
+        print("Index error")
         return "", 404
 
     BeaconValues[device_id] = telem_data
@@ -117,9 +117,9 @@ def update():
     Updates our database by fetching new data from Norbit Bluetrack database.
     """
     global LAST_UPDATE
-    updated_at = MOVE_DATA.update_callibration(1, 41, LAST_UPDATE)
+    updated_at = MOVE_DATA.update_calibration(1, 41, LAST_UPDATE)
     LAST_UPDATE = updated_at if updated_at != 0 else LAST_UPDATE
-    return "sucess", 200
+    return "Update success", 200
 
 
 @app.route("/ping", methods=["GET"])
@@ -127,7 +127,7 @@ def ping():
     """
     Responds to the ping endpoint with success.
     """
-    return "success", 200
+    return "Pong", 200
 
 
 if __name__ == "__main__":
@@ -140,7 +140,7 @@ if __name__ == "__main__":
                                  password=DB_PASSWORD)
     MOVE_DATA = MoveData(CLIENT)
     DB = CLIENT.testdb
-    LAST_UPDATE = MOVE_DATA.get_last_updated("callibrationData")
+    LAST_UPDATE = MOVE_DATA.get_last_updated("calibrationData")
     multilateration = Multilateration(CLIENT, True)
     multilateration.algorithm()
     app.run(debug=True)

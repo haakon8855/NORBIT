@@ -1,5 +1,5 @@
 """
-algorithm_fingerprint provides location estimation using fingerprinting
+algorithm_fingerprint_v1 provides location estimation using fingerprinting
 """
 from collections import Counter
 from pandas import DataFrame

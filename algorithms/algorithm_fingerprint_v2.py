@@ -28,7 +28,7 @@ def distance_matrix(matrix, value):
 def tuple_to_square(pos: tuple) -> str:
     """
     Converts from numerical coordinates to alphanumeric coordinates.
-    (e.g., (3, 4) -> 'E4' and (2, 1) -> 'C, 2')
+    (e.g., (3, 4) -> 'E4' and (2, 1) -> 'C2')
     """
     letter_a = ord("a")
     return chr(letter_a + pos[1]) + str(pos[0] + 1)

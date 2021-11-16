@@ -185,6 +185,7 @@ class Multilateration():
         """
         Finds the best-fit location of a beacon given a list of coordinates to
         locators in 2d-space and the distance to them.
+        This method is borrowed from https://github.com/glucee/Multilateration
         """
         def error(guess, locators, radius):
             return sum([(np.linalg.norm(guess - locators[i]) - radius[i])**2

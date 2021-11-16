@@ -23,3 +23,7 @@ Lastly, to start the backend server, run
     python3 main.py
 
 Remember to have the env.py file ready. A tunnel is also required to access the database.
+
+## Multilateration source
+To calculate the predicted location using multilateration we borrowed a 
+minimizing function from [glucee's multilateration repository](https://github.com/glucee/Multilateration).

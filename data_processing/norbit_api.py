@@ -1,11 +1,10 @@
 """Norbit"""
 
-import requests
 import json
 import datetime
+import requests
 
-from env import *
-from requests.models import Response
+from env import API_URL, API_KEY, API_SECRET
 
 GATEWAY_FIELDS = {
     "_id": "id",
@@ -33,6 +32,9 @@ TD_FIELDS = {
 
 
 class NorbitApi():
+    """
+    API calls for fetching data from NORBIT's API.
+    """
     def __init__(self):
         self.api_url = API_URL
         self.headers = {
@@ -44,7 +46,7 @@ class NorbitApi():
         """
         Returns information about all companies
         """
-        request_url = self.api_url + f"companies"
+        request_url = self.api_url + "companies"
         return requests.get(request_url, headers=self.headers)
 
     def get_company(self, company_id: int):
@@ -56,7 +58,7 @@ class NorbitApi():
 
     def get_gateways(self, company_id: int):
         """
-        Returns information about all gateways 
+        Returns information about all gateways
         linked to a specific company
         E.g. company_id = 1 (Norbit)
         """
@@ -108,7 +110,7 @@ class NorbitApi():
     def get_td_by_device(self, company_id: int, device_id: int,
                          last_hours: int):
         """
-        Returns the last TDs from specific device given company, 
+        Returns the last TDs from specific device given company,
         device and last hours.
         last_hours: int, returns all pings during the given last hours
         """
@@ -119,7 +121,7 @@ class NorbitApi():
     def get_td_by_gateway(self, company_id: int, gateway_id: int,
                           last_hours: int):
         """
-        Returns the last TDs from specific device given company, 
+        Returns the last TDs from specific device given company,
         gateway and last hours.
         last_hours: int, returns all pings during the given last hours
         """
@@ -128,15 +130,15 @@ class NorbitApi():
         return requests.get(request_url, headers=self.headers)
 
     def get_td_by_time_interval(self, company_id: int, device_id: int,
-                                dateTimeFrom: int, dateTimeTo: int):
+                                date_time_from: int, date_time_to: int):
         """
-        Returns the TDs from specific device given company, 
+        Returns the TDs from specific device given company,
         gateway and time interval.
         dateTimeFrom: start time of time interval
         dateTimeTo: end time of time interval
         """
         request_url = self.api_url + \
-            f"td/device/{company_id}/{device_id}/period/{dateTimeFrom}/{dateTimeTo}"
+            f"td/device/{company_id}/{device_id}/period/{date_time_from}/{date_time_to}"
         return requests.get(request_url, headers=self.headers)
 
 
@@ -144,7 +146,7 @@ def filter_data(response, fields):
     """
     Filters the json data from the given response by only keeping the fields
     given in 'source_fields', then renaming the fields with their corresponding
-    field name in 'target_fields'. 
+    field name in 'target_fields'.
     """
     try:
         elements = response.json()  # assumes a list of objects
@@ -203,24 +205,3 @@ def print_response(response: requests.models.Response):
         print(json_to_text(response.json()))
     except:
         print(response.text())
-
-
-if __name__ == "__main__":
-    api = NorbitApi()
-
-    response = api.get_gateways(company_id=1)
-    filtered = filter_data(response, GATEWAY_FIELDS)
-    print(json_to_text(filtered))
-
-    response = api.get_devices("smart_tag")
-    filtered = filter_data(response, SMART_TAG_FIELDS)
-    print(json_to_text(filtered))
-
-    start = get_time_stamp_from_date(2021, 5, 27)
-    stop = get_time_stamp_from_date(2021, 5, 28)
-    response = api.get_td_by_time_interval(company_id=1,
-                                           device_id=1,
-                                           dateTimeFrom=start,
-                                           dateTimeTo=stop)
-    filtered = filter_data(response, TD_FIELDS)
-    print(json_to_text(filtered))

@@ -1,3 +1,5 @@
+"""Coordinates of the center of each fingerprint calibration grid square"""
+
 coords = {
     "a3": [63.44223415, 10.42837249],
     "a4": [63.44217702, 10.42850640],

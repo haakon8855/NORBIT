@@ -8,15 +8,19 @@ from flask_restful import abort
 from pymongo.errors import DuplicateKeyError
 import pandas as pd
 
-import move_data
+from data_processing.move_data import MoveData
+from data_processing.store_fingerprint import StoreFingerprint
+from algorithms.algorithm_multilateration import Multilateration
+from algorithms.algorithm_fingerprint_v1 import FingerprintingV1
+from algorithms.algorithm_fingerprint_v2 import FingerprintingV2
 from env import DB_URI, DB_PORT, DB_USERNAME, DB_PASSWORD, DB_CA_FILE
-from algorithm_multilateration import algorithm_multilateration
 
 # Configure Flask & Flask-PyMongo:
 app = Flask(__name__)
 CLIENT = None
 DB = None
 LAST_UPDATE = None
+MOVE_DATA = None
 BeaconValues = {}
 
 ALGORITHM_VERSIONS = {
@@ -28,7 +32,10 @@ ALGORITHM_VERSIONS = {
 }
 
 
-def abort_beaconId_not_found(beacon_id):
+def abort_beacon_id_not_found(beacon_id):
+    """
+    Aborts operation if beacon_id is not found
+    """
     if beacon_id not in BeaconValues:
         abort(404, message="Beacon Id is not found")
 
@@ -98,13 +105,13 @@ def get_td(device_id: int):
     Returns the telemetry data from our database given a device id (beacon id).
     """
     try:
-        td = DB.td.find({"_id": int(device_id)})[0]
+        telem_data = DB.td.find({"_id": int(device_id)})[0]
     except IndexError:
-        print("index error")
+        print("Index error")
         return "", 404
 
-    BeaconValues[device_id] = td
-    return jsonify([td])
+    BeaconValues[device_id] = telem_data
+    return jsonify([telem_data])
 
 
 @app.route('/update')
@@ -113,9 +120,9 @@ def update():
     Updates our database by fetching new data from Norbit Bluetrack database.
     """
     global LAST_UPDATE
-    updated_at = move_data.update_callibration(CLIENT, 1, 41, LAST_UPDATE)
+    updated_at = MOVE_DATA.update_calibration(1, 41, LAST_UPDATE)
     LAST_UPDATE = updated_at if updated_at != 0 else LAST_UPDATE
-    return "sucess", 200
+    return "Update success", 200
 
 
 @app.route("/ping", methods=["GET"])
@@ -123,7 +130,7 @@ def ping():
     """
     Responds to the ping endpoint with success.
     """
-    return "sucess", 200
+    return "Pong", 200
 
 
 if __name__ == "__main__":
@@ -134,8 +141,18 @@ if __name__ == "__main__":
                                  tlsCAFile=DB_CA_FILE,
                                  username=DB_USERNAME,
                                  password=DB_PASSWORD)
+    MOVE_DATA = MoveData(CLIENT)
     DB = CLIENT.testdb
-    LAST_UPDATE = move_data.get_last_updated(CLIENT, "callibrationData")
-    algorithm_multilateration(CLIENT, test_accuracy=True)
+
+    LAST_UPDATE = MOVE_DATA.get_last_updated("callibrationData")
+
+    store_fingerprint = StoreFingerprint(CLIENT)
+    print(store_fingerprint.get_all_heatmaps([8, 12, 7, 10, 11, 9]))
+
+    algorithm = Multilateration(CLIENT, True)
+    # algorithm = FingerprintingV1(CLIENT)
+    # algorithm = FingerprintingV2(CLIENT)
+    prediction = algorithm.algorithm()
+    print('\n', prediction, '\n')
     app.run(debug=True)
     CLIENT.close()
